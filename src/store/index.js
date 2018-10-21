@@ -14,5 +14,17 @@ export default new Vuex.Store({
     shelf
   },
   strict: debug,
-  plugins: debug ? [createLogger()] : []
+  plugins: debug ? [createLogger()] : [],
+  state: {
+    showToolbar: true
+  },
+  mutations: {
+    toggleToolbar (state, val) {
+      if (val !== undefined) {
+        state.showToolbar = val
+      } else {
+        state.showToolbar = !state.showToolbar
+      }
+    }
+  }
 })

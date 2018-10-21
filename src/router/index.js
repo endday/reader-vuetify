@@ -50,7 +50,10 @@ export default new Router({
     {
       path: '/reader/:id',
       component: reader,
-      name: 'reader'
+      name: 'reader',
+      meta: {
+        fullScreen: true
+      }
     }
   ]
 })

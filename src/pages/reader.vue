@@ -1,21 +1,38 @@
 <template>
-  <page>
-    <section class="chapter-body" :style="bodyStyle">
-      <!--<h4 class="title pa-3" v-text="title"></h4>-->
-      <!--<p class="main-text pa-3" v-text="chapter"></p>-->
-      <p class="main-text mb-0"
-         :class="{'firstLine': item.firstLine}"
-         v-for="(item, index) in chapter2"
-         :key="index"
-         v-text="item.text">
-      </p>
-    </section>
+  <page class="page">
+    <div class="reader-mask">
+      <div class="area">
+        <div class="pre-ctrl" @click="prePage"></div>
+      </div>
+      <div class="area">
+        <div class="pre-ctrl" @click="prePage"></div>
+        <div class="mid-ctrl" @click="toggleToolbar"></div>
+        <div class="next-ctrl" @click="nextPage"></div>
+      </div>
+      <div class="area">
+        <div class="next-ctrl" @click="nextPage"></div>
+      </div>
+    </div>
+    <article class="chapter-body">
+      <section class="reader-section"
+               ref="reader"
+               :style="{transform: `translateX(-${pageNo * pageWidth}px)`}">
+        <div v-if="chapters[chapterNo] && chapters[chapterNo].article.length">
+          <h4 class="title pa-3"
+              v-text="chapters[chapterNo].title"></h4>
+          <p class="main-text"
+             v-for="(line, index) in chapters[chapterNo].article"
+             v-text="line">
+          </p>
+        </div>
+      </section>
+    </article>
     <v-bottom-nav
-      app
-      :value="true"
-      fixed
+      slot="footer"
+      :value="showToolbar"
+      :fixed="true"
       height="48px"
-      color="transparent">
+      color="#fff">
       <v-btn flat>
         <v-icon class="mb-0">format_list_bulleted</v-icon>
       </v-btn>
@@ -34,7 +51,6 @@
 </template>
 
 <script>
-import chapterFormat from '../utils/chapterFormat'
 
 export default {
   name: 'reader',
@@ -47,20 +63,32 @@ export default {
       chapters: [],
       chapterId: null,
       title: '',
-      chapter: null,
-      chapter2: ['1', '2'],
-      bodyStyle: { height: '0px' }
+      pageNo: 0,
+      chapterNo: 0,
+      readerHeight: 0,
+      lineHeight: 1.6,
+      fontSize: 16,
+      shimHeight: 0,
+      pageWidth: 0,
+      chapterWidth: 0
     }
   },
   computed: {
     bookId () {
       return this.$route.params.id
+    },
+    showToolbar () {
+      return this.$store.state.showToolbar
     }
   },
   created () {
+    this.getScreenWidth()
     this.init()
   },
   methods: {
+    getScreenWidth () {
+      this.pageWidth = document.body.clientWidth
+    },
     getBookSource (id = this.bookId) {
       return this.$http.get(`book/sources/${id}`)
         .then(res => {
@@ -68,19 +96,29 @@ export default {
         })
     },
     getCatalog (id = this.sourceId) {
-      return this.$http.get(`book/catalog/${id}`)
-        .then(res => {
-          this.chapters = res.chapters
-          return Promise.resolve(res.chapters[0].link)
-        })
+      if (!this.chapters.length) {
+        return this.$http.get(`book/catalog/${id}`)
+          .then(res => {
+            this.chapters = res.chapters.map(item => ({
+              article: [],
+              ...item
+            }))
+            return Promise.resolve()
+          })
+      }
+      return Promise.resolve()
     },
-    getChapter (id = this.chapterId) {
-      const formatId = encodeURIComponent(id)
-      return this.$http.get(`book/chapter/${formatId}`)
-        .then(res => {
-          this.title = res.chapter.title
-          this.chapter = res.chapter.body
-        })
+    getChapter (link = this.chapterId) {
+      if (!this.chapters[this.chapterNo].article.length) {
+        const formatLink = encodeURIComponent(link)
+        return this.$http.get(`book/chapter/${formatLink}`)
+          .then(res => {
+            this.title = res.chapter.title
+            this.chapters[this.chapterNo].article = res.chapter.body.split('\n')
+          })
+      } else {
+        return Promise.resolve()
+      }
     },
     getReadHistory () {
       let session = window.localStorage.getItem('bookShelf')
@@ -100,27 +138,122 @@ export default {
       if (!this.sourceId) {
         this.sourceId = await this.getBookSource()
       }
+      await this.getCatalog()
       if (!this.chapterId) {
-        this.chapterId = await this.getCatalog()
+        this.chapterId = this.chapters[0].link
       }
       await this.getChapter()
-      const height = window.screen.availHeight - 104
-      this.bodyStyle.height = `${height}px`
-      this.chapter2 = chapterFormat(this.chapter)
+      this.$nextTick().then(() => {
+        this.chapterWidth = this.$refs.reader.scrollWidth
+      })
+    },
+    async nextPage () {
+      this.hideToolbar()
+      if ((this.pageNo + 1) * this.pageWidth >= this.chapterWidth) {
+        await this.getCatalog()
+        this.chapters[this.chapterNo].totalpage = this.pageNo
+        this.chapterNo += 1
+        this.chapterId = this.chapters[this.chapterNo].link
+        this.pageNo = 0
+        await this.getChapter()
+        this.$nextTick().then(() => {
+          this.chapterWidth = this.$refs.reader.scrollWidth
+        })
+      } else {
+        this.pageNo += 1
+      }
+    },
+    async prePage () {
+      this.hideToolbar()
+      if (this.pageNo <= 0) {
+        this.pageNo = 0
+        if (this.chapterNo > 0) {
+          this.chapterNo -= 1
+          await this.getChapter()
+          this.$nextTick().then(() => {
+            this.chapterWidth = this.$refs.reader.scrollWidth
+          })
+          this.pageNo = this.chapters[this.chapterNo].totalpage
+        }
+      } else if (this.pageNo > 0) {
+        this.pageNo -= 1
+      } else {
+        this.pageNo = 0
+      }
+    },
+    toggleToolbar () {
+      this.$store.commit('toggleToolbar')
+    },
+    hideToolbar () {
+      if (this.showToolbar) {
+        this.$store.commit('toggleToolbar', false)
+      }
     }
   }
 }
 </script>
 <style scoped>
+  .page {
+    transform-style: preserve-3d;
+  }
+
   .chapter-body {
-    overflow-y: scroll;
-    padding: 0 10px;
+    position: absolute;
+    top: 30px;
+    bottom: 10px;
+    left: 0;
+    right: 0;
+    margin: 0 16px;
+    font-size: 18px;
+    line-height: 1.8;
+    text-align: justify;
+    overflow: hidden;
+  }
+
+  .reader-section {
+    overflow: visible;
+    height: 100%;
+    column-width: 100vw;
+    column-gap: 32px;
+  }
+
+  .reader-mask {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .area {
+    flex: 1;
+    display: flex;
+  }
+
+  .pre-ctrl {
+    flex: 1;
+    height: 100%;
+  }
+
+  .next-ctrl {
+    flex: 1;
+    height: 100%;
+  }
+
+  .mid-ctrl {
+    flex: 1;
+    height: 100%;
   }
 
   .main-text {
-    line-height: 30px;
-    font-size: 17px;
+    text-indent: 2em;
+    margin-bottom: 0;
+    font-size: 1em;
   }
+
   .firstLine {
     text-indent: 2em;
   }
