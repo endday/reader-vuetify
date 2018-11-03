@@ -1,3 +1,5 @@
+importScripts("/precache-manifest.99da626d5f447614eea295fe90df2b59.js", "https://storage.googleapis.com/workbox-cdn/releases/3.6.3/workbox-sw.js");
+
 var cacheStorageKey = 'cachesName'
 var cacheList = [
   // 注册成功后要立即缓存的资源列表
@@ -45,3 +47,4 @@ self.addEventListener('fetch', function (e) {
     // 也可以通过吧 fetch 拿到的响应通过 caches.put 方法放进 caches
   )
 })
+
