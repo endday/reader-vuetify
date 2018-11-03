@@ -1,21 +1,24 @@
 <template>
   <v-list three-line>
-    <template v-for="(item, index) in shelf">
+    <template v-for="(book, index) in shelf">
       <v-list-tile
-        :key="item._id"
-        class="py-1">
+        :key="book.id"
+        class="py-1"
+        @click="goToRead(book.id)">
         <v-img
           class="mr-3"
-          :src="item.cover"
+          :src="book.cover"
           height="80px"
           max-width="60px"
           width="60px"
           contain
         ></v-img>
         <v-list-tile-content>
-          <v-list-tile-title v-text="item.title"></v-list-tile-title>
+          <v-list-tile-title v-text="book.title"></v-list-tile-title>
           <v-list-tile-sub-title>
-            <div v-text="item.author"></div>
+            <p>
+              <span v-text="book.updatedText"></span>:<span v-text="book.lastChapter"></span>
+            </p>
           </v-list-tile-sub-title>
           <!--<v-list-tile-action>
               <v-icon>chevron_right</v-icon>
@@ -44,7 +47,11 @@ export default {
   created () {
     this.$store.commit('shelf/getBooks')
   },
-  methods: {}
+  methods: {
+    goToRead (id) {
+      this.$router.push(`/reader/${id}`)
+    }
+  }
 }
 </script>
 

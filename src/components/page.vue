@@ -9,7 +9,7 @@
                @click="back">
           <v-icon>arrow_back</v-icon>
         </v-btn>
-        <v-toolbar-title v-text="routerName"></v-toolbar-title>
+        <v-toolbar-title v-text="title"></v-toolbar-title>
       </slot>
     </v-toolbar>
     <v-content>
@@ -22,6 +22,12 @@
 <script>
 export default {
   name: 'page',
+  props: {
+    title: {
+      type: String,
+      default: this.routerName
+    }
+  },
   computed: {
     routerName () {
       return this.$route.meta.name || ''

@@ -36,7 +36,7 @@
                   v-text="`${book.wordCount}字`"></span>
             <span class="px-1">|</span>
             <span class="subheading"
-                  v-text="book.updated"></span>
+                  v-text="book.updatedText"></span>
           </p>
         </v-flex>
       </v-layout>
@@ -100,16 +100,31 @@ export default {
     getBookDetail (id = this.$route.params.id) {
       this.$http.get(`book/${id}`)
         .then(res => {
-          res.cover = decodeURIComponent(res.cover).slice(7)
-          res.rating.star = res.rating.score / 2
-          res.rating.score = res.rating.score.toFixed(1)
-          res.rating.countText = this.formatCount(res.rating.count)
-          res.wordCount = this.formatCount(res.wordCount, 0)
-          res.updated = this.timeToNow(res.updated)
-          res.latelyFollower = this.formatCount(res.latelyFollower, 1)
-          res.postCount = this.formatCount(res.postCount, 1)
-          this.book = res
+          this.book = this.formatBookInfo(res)
         })
+    },
+    formatBookInfo (book) {
+      return {
+        id: book._id,
+        title: book.title,
+        cover: decodeURIComponent(book.cover).slice(7),
+        rating: {
+          star: book.rating.score / 2,
+          score: book.rating.score.toFixed(1),
+          count: this.formatCount(book.rating.count)
+        },
+        author: book.author,
+        majorCate: book.majorCate,
+        wordCount: this.formatCount(book.wordCount, 0),
+        updatedText: this.timeToNow(book.updated),
+        updated: book.updated,
+        lastChapter: book.lastChapter,
+        latelyFollower: this.formatCount(book.latelyFollower, 1),
+        retentionRatio: book.retentionRatio,
+        postCount: this.formatCount(book.postCount, 1),
+        serializeWordCount: book.serializeWordCount,
+        longIntro: book.longIntro
+      }
     },
     formatCount (num, count = 1) {
       if (num >= 10000) {
@@ -141,11 +156,14 @@ export default {
     addToShelf () {
       let session = window.localStorage.getItem('bookShelf')
       const bookShelf = session ? JSON.parse(session) : []
-      if (bookShelf.every(book => book._id !== this.book._id)) {
+      const index = bookShelf.findIndex(book => book.id === this.book.id)
+      if (index < 0) {
         bookShelf.push(this.book)
-        session = JSON.stringify(bookShelf)
-        window.localStorage.setItem('bookShelf', session)
+      } else {
+        bookShelf[index] = this.book
       }
+      session = JSON.stringify(bookShelf)
+      window.localStorage.setItem('bookShelf', session)
     },
     goToRead (id = this.$route.params.id) {
       this.$router.push(`/reader/${id}`)

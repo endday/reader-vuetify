@@ -13,6 +13,7 @@ import {
   VGrid,
   VToolbar,
   VBottomNav,
+  VNavigationDrawer,
   transitions
 } from 'vuetify'
 
@@ -33,6 +34,7 @@ export default {
         VGrid,
         VToolbar,
         VBottomNav,
+        VNavigationDrawer,
         transitions
       },
       theme: {

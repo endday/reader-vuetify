@@ -1,5 +1,15 @@
 <template>
-  <page class="page">
+  <page class="page"
+        :title="book.title">
+    <v-navigation-drawer
+      v-model="drawer"
+      absolute
+      temporary>
+      <chapters
+        :chapters="chapters"
+        :bookTitle="book.title"
+        @chapter-click="jumpChapter"/>
+    </v-navigation-drawer>
     <div class="reader-mask">
       <div class="area">
         <div class="pre-ctrl" @click="prePage"></div>
@@ -13,27 +23,34 @@
         <div class="next-ctrl" @click="nextPage"></div>
       </div>
     </div>
-    <article class="chapter-body">
-      <section class="reader-section"
-               ref="reader"
-               :style="{transform: `translateX(-${pageNo * pageWidth}px)`}">
-        <div v-if="chapters[chapterNo] && chapters[chapterNo].article.length">
-          <h4 class="title pa-3"
-              v-text="chapters[chapterNo].title"></h4>
-          <p class="main-text"
-             v-for="(line, index) in chapters[chapterNo].article"
-             v-text="line">
-          </p>
-        </div>
-      </section>
-    </article>
+    <div class="page-header">
+      <p class="chapter-title"
+         v-if="chapters[chapterNo]"
+         v-text="chapters[chapterNo].title"></p>
+    </div>
+    <div class="reader-content">
+      <article class="chapter-body">
+        <section class="reader-section"
+                 ref="reader"
+                 :style="{transform: `translateX(-${pageNo * pageWidth}px)`}">
+          <div v-if="chapters[chapterNo] && chapters[chapterNo].article.length">
+            <h4 class="title pa-3"
+                v-text="chapters[chapterNo].title"></h4>
+            <p class="main-text"
+               v-for="(line, index) in chapters[chapterNo].article"
+               v-text="line">
+            </p>
+          </div>
+        </section>
+      </article>
+    </div>
     <v-bottom-nav
       slot="footer"
       :value="showToolbar"
       :fixed="true"
       height="48px"
       color="#fff">
-      <v-btn flat>
+      <v-btn flat @click="drawer = true">
         <v-icon class="mb-0">format_list_bulleted</v-icon>
       </v-btn>
       <v-btn flat @click="bright = !bright">
@@ -51,13 +68,20 @@
 </template>
 
 <script>
+import chapters from './components/drawer'
 
 export default {
   name: 'reader',
+  components: {
+    chapters
+  },
   data () {
     return {
       shelf: [],
-      book: {},
+      book: {
+        title: ''
+      },
+      drawer: false,
       bright: true,
       sourceId: null,
       chapters: [],
@@ -83,11 +107,18 @@ export default {
   },
   created () {
     this.getScreenWidth()
+    this.getBookDetail()
     this.init()
   },
   methods: {
+    getBookDetail (id = this.$route.params.id) {
+      this.$http.get(`book/${id}`)
+        .then(res => {
+          this.book.title = res.title
+        })
+    },
     getScreenWidth () {
-      this.pageWidth = document.body.clientWidth
+      this.pageWidth = document.body.clientWidth - 16
     },
     getBookSource (id = this.bookId) {
       return this.$http.get(`book/sources/${id}`)
@@ -134,7 +165,6 @@ export default {
       }
     },
     async init () {
-      this.getReadHistory()
       if (!this.sourceId) {
         this.sourceId = await this.getBookSource()
       }
@@ -146,6 +176,14 @@ export default {
       this.$nextTick().then(() => {
         this.chapterWidth = this.$refs.reader.scrollWidth
       })
+    },
+    jumpChapter (chapter) {
+      this.chapterNo = chapter.index
+      this.chapterId = this.chapters[this.chapterNo].link
+      this.pageNo = 0
+      this.getChapter()
+      this.drawer = false
+      this.hideToolbar()
     },
     async nextPage () {
       this.hideToolbar()
@@ -197,24 +235,43 @@ export default {
     transform-style: preserve-3d;
   }
 
-  .chapter-body {
+  .page-header {
+    position: fixed;
+    top: 0;
+    left: 16px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .chapter-title {
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 0;
+  }
+
+  .reader-content {
     position: absolute;
-    top: 30px;
-    bottom: 10px;
-    left: 0;
-    right: 0;
+    top: 44px;
+    bottom: 0;
+    overflow: hidden;
+    width: 100%;
+    border-top: 0;
+  }
+
+  .chapter-body {
+    height: 100%;
     margin: 0 16px;
     font-size: 18px;
     line-height: 1.8;
-    text-align: justify;
     overflow: hidden;
   }
 
   .reader-section {
     overflow: visible;
     height: 100%;
-    column-width: 100vw;
-    column-gap: 32px;
+    columns: calc(100vw - 32px) 1;
+    column-gap: 16px;
   }
 
   .reader-mask {
