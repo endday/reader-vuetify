@@ -1,57 +1,80 @@
 <template>
   <page>
-    <v-layout row>
-      <v-flex xs3 sm2 offset-sm2>
-        <v-list v-show="rankType.length"
-                class="left-list">
-          <v-list-tile
-            v-for="(item, index) in rankType"
-            :key="item._id"
-            inactive
-            :class="{'select-type': index === currentType}"
-            @click="changeType(index)">
-            <v-list-tile-content>
-              <v-list-tile-title
-                class="text-xs-center"
-                v-text="item.shortTitle">
-              </v-list-tile-title>
-            </v-list-tile-content>
-          </v-list-tile>
-        </v-list>
-      </v-flex>
-      <v-flex xs9 sm6>
-        <v-list three-line
-                class="right-list">
-          <div v-for="(list, i) in rankList"
-               :key="`${i}-list`"
-               v-show="i === currentType">
-            <div v-for="(item, j) in list"
-                 :key="`${j}-${item._id}`">
+    <v-tabs
+      slot="extension"
+      v-model="tabIndex"
+      @input="tabChange"
+      centered
+      fixed-tabs
+      color="transparent">
+      <v-tab
+        v-for="(rankCat, index) in rankCats"
+        :key="index">
+        {{rankCat.name}}
+      </v-tab>
+    </v-tabs>
+    <v-tabs-items v-model="tabIndex">
+      <v-tab-item v-for="(lists, index) in rankType"
+                  :key="index">
+        <v-layout row>
+          <v-flex xs3 sm2 offset-sm2>
+            <v-list class="left-list">
               <v-list-tile
-                @click="openBook(item._id)">
-                <v-img
-                  class="cover"
-                  :src="item.cover"
-                  height="80px"
-                  contain
-                ></v-img>
+                v-for="(list, index) in lists"
+                @click="changeType(index)"
+                :key="list._id"
+                :class="{'select-type': index === subIndex}">
                 <v-list-tile-content>
-                  <v-list-tile-title v-text="item.title"></v-list-tile-title>
-                  <v-list-tile-sub-title>
-                    <div v-text="item.author"></div>
-                    <div><span v-text="item.latelyFollower"></span>人气<span v-text="item.retentionRatio"></span>%留存率
-                    </div>
-                  </v-list-tile-sub-title>
+                  <v-list-tile-title
+                    class="text-xs-center"
+                    v-text="list.shortTitle">
+                  </v-list-tile-title>
                 </v-list-tile-content>
               </v-list-tile>
-              <v-divider
-                :inset="true">
-              </v-divider>
-            </div>
-          </div>
-        </v-list>
-      </v-flex>
-    </v-layout>
+            </v-list>
+          </v-flex>
+          <v-flex xs9 sm6>
+            <v-list three-line
+                    class="right-list"
+                    v-for="(list, index) in lists"
+                    :key="list._id"
+                    v-show="index === subIndex">
+              <div v-for="book in list.books"
+                   :key="book._id">
+                <v-list-tile
+                  @click="openBook(book._id)">
+                  <v-list-tile-action>
+                    <v-img
+                      class="cover"
+                      :src="book.cover"
+                      width="40px"
+                      contain
+                    ></v-img>
+                  </v-list-tile-action>
+                  <v-list-tile-content>
+                    <v-list-tile-title v-text="book.title"></v-list-tile-title>
+                    <v-list-tile-sub-title>
+                      <div v-text="book.author"></div>
+                      <v-layout>
+                        <p>
+                          <span v-text="book.latelyFollower"></span>人气
+                        </p>
+                        <p>
+                          <span v-text="book.retentionRatio"></span>%留存率
+                        </p>
+                      </v-layout>
+                    </v-list-tile-sub-title>
+                  </v-list-tile-content>
+                </v-list-tile>
+                <v-divider
+                  :inset="true">
+                </v-divider>
+              </div>
+            </v-list>
+          </v-flex>
+        </v-layout>
+      </v-tab-item>
+    </v-tabs-items>
   </page>
 </template>
 
@@ -63,34 +86,64 @@ export default {
       items: [
         { title: '测试', href: 'rankList' }
       ],
-      currentType: 0
+      rankCats: [
+        {
+          value: 'male',
+          name: '男频'
+        },
+        {
+          value: 'female',
+          name: '女频'
+        },
+        {
+          value: 'epub',
+          name: '出版'
+        },
+        {
+          value: 'picture',
+          name: '漫画'
+        }
+      ],
+      tabIndex: 0,
+      subIndex: 0
     }
   },
   computed: {
     rankType () {
-      return this.$store.state.rank.rankType.male
-    },
-    rankList () {
-      return this.$store.state.rank.rankList
+      return this.$store.state.rank.rankType
     }
   },
   created () {
-    if (this.$route.query.index) {
-      this.currentType = parseInt(this.$route.query.index)
-    }
-    this.$store.dispatch('rank/getRankList', this.currentType)
+    this.$store.dispatch('rank/getRankType')
+      .then(() => {
+        this.changeType()
+      })
   },
   methods: {
-    changeType (index) {
-      this.currentType = index
-      this.$router.replace({
-        path: 'rankList',
-        query: { index }
+    changeType (subIndex = 0) {
+      this.subIndex = subIndex
+      this.$store.dispatch('rank/getBooks', {
+        index: this.tabIndex,
+        subIndex: subIndex
       })
-      this.$store.dispatch('rank/getRankList', index)
+    },
+    tabChange () {
+      this.$store.dispatch('rank/getBooks', {
+        index: this.tabIndex,
+        subIndex: 0
+      })
     },
     openBook (id) {
       this.$router.push(`/bookDetail/${id}`)
+    },
+    routePath (type) {
+      return {
+        path: 'rankList',
+        query: {
+          cat: this.rankCats[this.tabIndex].value,
+          type: type
+        }
+      }
     }
   }
 }
@@ -107,7 +160,7 @@ export default {
     overflow-y: scroll;
   }
 
-  .select-type {
+  .select-type, .select-type a {
     background-color: #fff;
   }
 

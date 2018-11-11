@@ -1,37 +1,37 @@
 import api from '../../utils/api'
 
 const state = {
-  rankType: {
-    male: [],
-    female: [],
-    picture: [],
-    epub: []
-  },
-  rankList: []
+  rankType: []
 }
 
 const mutations = {
   setRankType (state, { male, female, picture, epub }) {
-    state.rankType = {
-      male,
-      female,
-      picture,
-      epub
-    }
-    state.rankList = Array(male.length).fill([])
+    male.forEach(item => {
+      item.books = []
+    })
+    female.forEach(item => {
+      item.books = []
+    })
+    picture.forEach(item => {
+      item.books = []
+    })
+    epub.forEach(item => {
+      item.books = []
+    })
+    state.rankType.push(male, female, epub, picture)
   },
-  setRankList (state, { res, index }) {
+  setBooks (state, { res, index, subIndex }) {
     const list = res.ranking.books
     list.forEach(item => {
       item.cover = decodeURIComponent(item.cover).slice(7)
     })
-    state.rankList.splice(index, 1, list)
+    state.rankType[index][subIndex].books = list
   }
 }
 
 const actions = {
   getRankType ({ state, commit }) {
-    if (state.rankType.male.length) {
+    if (state.rankType.length) {
       return Promise.resolve()
     }
     return api.getRankType()
@@ -40,18 +40,20 @@ const actions = {
         return Promise.resolve()
       })
   },
-  getRankList ({ state, commit, dispatch }, index) {
+  getBooks ({ state, commit, dispatch }, { index, subIndex }) {
     dispatch('getRankType')
       .then(() => {
-        if (state.rankList[index].length) {
+        const books = state.rankType[index][subIndex].books
+        if (books && books.length) {
           return Promise.resolve()
+        } else {
+          const listId = state.rankType[index][subIndex]._id
+          return api.getRankList(listId)
         }
-        const listId = state.rankType.male[index]._id
-        return api.getRankList(listId)
       })
       .then(res => {
         if (res) {
-          commit('setRankList', { res, index })
+          commit('setBooks', { res, index, subIndex })
         }
       })
   }

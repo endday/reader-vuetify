@@ -13,13 +13,6 @@ Vue.component('page', page)
 
 Vue.config.productionTip = false
 
-if ('serviceWorker' in navigator) {
-  // Use the window load event to keep the page load performant
-  window.addEventListener('load', () => {
-    // navigator.serviceWorker.register('/serviceWorker.js')
-  })
-}
-
 /* eslint-disable no-new */
 new Vue({
   el: '#app',

@@ -1,15 +1,18 @@
 <template>
   <v-app>
-    <v-toolbar
-      :app="!$route.meta.fullScreen"
-      fixed
-      :class="{'active': !showToolbar}">
+    <v-toolbar :app="fullScreen"
+               fixed
+               :class="{'active': !showToolbar}">
       <slot name="toolbar">
         <v-btn icon
                @click="back">
           <v-icon>arrow_back</v-icon>
         </v-btn>
-        <v-toolbar-title v-text="title"></v-toolbar-title>
+        <v-toolbar-title v-text="titleName"></v-toolbar-title>
+      </slot>
+      <slot name="extension"
+            slot="extension"
+            height="44">
       </slot>
     </v-toolbar>
     <v-content>
@@ -24,13 +27,15 @@ export default {
   name: 'page',
   props: {
     title: {
-      type: String,
-      default: this.routerName
+      type: String
     }
   },
   computed: {
-    routerName () {
-      return this.$route.meta.name || ''
+    fullScreen () {
+      return !this.$route.meta.fullScreen
+    },
+    titleName () {
+      return this.title || this.$route.meta.name || ''
     },
     showToolbar () {
       return this.$store.state.showToolbar
