@@ -58,23 +58,28 @@
         <v-icon v-show="bright" class="mb-0">brightness_high</v-icon>
         <v-icon v-show="!bright" class="mb-0">brightness_low</v-icon>
       </v-btn>
-      <v-btn flat>
+      <v-btn flat @click="set = true">
         <v-icon class="mb-0">settings</v-icon>
       </v-btn>
       <v-btn flat>
         <v-icon class="mb-0">file_download</v-icon>
       </v-btn>
     </v-bottom-nav>
+    <v-bottom-sheet v-model="set">
+      <readSet></readSet>
+    </v-bottom-sheet>
   </page>
 </template>
 
 <script>
-import chapters from './components/drawer'
+import chapters from './components/chapters'
+import readSet from './components/readSet'
 
 export default {
   name: 'reader',
   components: {
-    chapters
+    chapters,
+    readSet
   },
   data () {
     return {
@@ -83,6 +88,7 @@ export default {
         title: ''
       },
       drawer: false,
+      set: false,
       bright: true,
       sourceId: null,
       chapters: [],
@@ -105,6 +111,15 @@ export default {
     showToolbar () {
       return this.$store.state.showToolbar
     }
+  },
+  beforeRouteEnter (from, to, next) {
+    next((vm) => {
+      vm.$store.commit('toggleToolbar', false)
+    })
+  },
+  beforeRouteLeave (from, to, next) {
+    this.$store.commit('toggleToolbar', true)
+    next()
   },
   created () {
     this.getScreenWidth()
