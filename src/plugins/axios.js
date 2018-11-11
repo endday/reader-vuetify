@@ -1,4 +1,5 @@
 import axios from 'axios'
+import Vue from 'vue'
 
 axios.defaults.baseURL = 'http://39.108.85.231:4000/api/'
 // axios.defaults.headers.common['Authorization'] = AUTH_TOKEN
@@ -16,8 +17,4 @@ axios.interceptors.response.use(function (response) {
   return Promise.reject(error)
 })
 
-export default {
-  install (vue) {
-    vue.prototype.$http = axios
-  }
-}
+Vue.prototype.$http = axios

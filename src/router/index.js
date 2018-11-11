@@ -3,7 +3,7 @@ import Router from 'vue-router'
 import index from '@/pages/index'
 import rankList from '@/pages/rankList'
 import bookDetail from '@/pages/bookDetail'
-import reader from '@/pages/reader'
+import reader from '@/pages/reader/index'
 
 Vue.use(Router)
 

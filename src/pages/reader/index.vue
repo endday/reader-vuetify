@@ -38,6 +38,7 @@
                 v-text="chapters[chapterNo].title"></h4>
             <p class="main-text"
                v-for="(line, index) in chapters[chapterNo].article"
+               :key="index"
                v-text="line">
             </p>
           </div>
