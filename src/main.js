@@ -8,6 +8,7 @@ import router from './router'
 import store from './store'
 import './assets/common.css'
 import page from './components/page'
+import './registerServiceWorker'
 
 Vue.component('page', page)
 
