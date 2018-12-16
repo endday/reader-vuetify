@@ -8,7 +8,9 @@ import router from './router'
 import store from './store'
 import './assets/common.css'
 import page from './components/page'
+import VueLazyload from 'vue-lazyload'
 
+Vue.use(VueLazyload)
 Vue.component('page', page)
 
 Vue.config.productionTip = false

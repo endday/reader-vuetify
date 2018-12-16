@@ -39,7 +39,8 @@ export default new Router({
       component: rankList,
       name: 'rankList',
       meta: {
-        name: '排行榜'
+        name: '排行榜',
+        fullScreen: false
       }
     },
     {

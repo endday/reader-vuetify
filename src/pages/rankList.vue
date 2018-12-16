@@ -3,7 +3,6 @@
     <v-tabs
       slot="extension"
       v-model="tabIndex"
-      @input="tabChange"
       centered
       fixed-tabs
       color="transparent">
@@ -20,10 +19,10 @@
           <v-flex xs3 sm2 offset-sm2>
             <v-list class="left-list">
               <v-list-tile
-                v-for="(list, index) in lists"
-                @click="changeType(index)"
+                v-for="(list, subIndex) in lists"
+                @click="changeType(subIndex)"
                 :key="list._id"
-                :class="{'select-type': index === subIndex}">
+                :class="{'select-type': subIndex === rankCats[index].subIndex}">
                 <v-list-tile-content>
                   <v-list-tile-title
                     class="text-xs-center"
@@ -38,18 +37,15 @@
                     class="right-list"
                     v-for="(list, index) in lists"
                     :key="list._id"
-                    v-show="index === subIndex">
-              <div v-for="book in list.books"
+                    v-show="index === rankCats[tabIndex].subIndex">
+              <div v-for="book in list.books.slice(0, 10)"
                    :key="book._id">
                 <v-list-tile
                   @click="openBook(book._id)">
                   <v-list-tile-action>
-                    <v-img
-                      class="cover"
-                      :src="book.cover"
-                      width="40px"
-                      contain
-                    ></v-img>
+                    <img class="cover"
+                         v-lazy="book.cover"
+                         alt="">
                   </v-list-tile-action>
                   <v-list-tile-content>
                     <v-list-tile-title v-text="book.title"></v-list-tile-title>
@@ -89,23 +85,26 @@ export default {
       rankCats: [
         {
           value: 'male',
-          name: '男频'
+          name: '男频',
+          subIndex: 0
         },
         {
           value: 'female',
-          name: '女频'
+          name: '女频',
+          subIndex: 0
         },
         {
           value: 'epub',
-          name: '出版'
+          name: '出版',
+          subIndex: 0
         },
         {
           value: 'picture',
-          name: '漫画'
+          name: '漫画',
+          subIndex: 0
         }
       ],
-      tabIndex: 0,
-      subIndex: 0
+      tabIndex: 0
     }
   },
   computed: {
@@ -119,18 +118,23 @@ export default {
         this.changeType()
       })
   },
+  watch: {
+    tabIndex () {
+      this.tabChange()
+    }
+  },
   methods: {
     changeType (subIndex = 0) {
-      this.subIndex = subIndex
+      this.rankCats[this.tabIndex].subIndex = subIndex
       this.$store.dispatch('rank/getBooks', {
         index: this.tabIndex,
         subIndex: subIndex
       })
     },
-    tabChange () {
+    tabChange (tabIndex) {
       this.$store.dispatch('rank/getBooks', {
         index: this.tabIndex,
-        subIndex: 0
+        subIndex: this.rankCats[this.tabIndex].subIndex
       })
     },
     openBook (id) {
@@ -165,7 +169,7 @@ export default {
   }
 
   .cover {
-    margin-right: 10px;
+    width: 45px;
   }
 </style>
 
