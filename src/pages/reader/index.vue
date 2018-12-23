@@ -23,27 +23,30 @@
         <div class="next-ctrl" @click="nextPage"></div>
       </div>
     </div>
-    <div class="page-header">
-      <p class="chapter-title"
-         v-if="chapters[chapterNo]"
-         v-text="chapters[chapterNo].title"></p>
-    </div>
-    <div class="reader-content">
-      <article class="chapter-body">
-        <section class="reader-section"
-                 ref="reader"
-                 :style="{transform: `translateX(-${pageNo * pageWidth}px)`}">
-          <div v-if="chapters[chapterNo] && chapters[chapterNo].article.length">
-            <h4 class="title pa-3"
-                v-text="chapters[chapterNo].title"></h4>
-            <p class="main-text"
-               v-for="(line, index) in chapters[chapterNo].article"
-               :key="index"
-               v-text="line">
-            </p>
-          </div>
-        </section>
-      </article>
+    <div class="page-reader"
+         :style="readerStyle">
+      <div class="page-header">
+        <p class="chapter-title"
+           v-if="chapters[chapterNo]"
+           v-text="chapters[chapterNo].title"></p>
+      </div>
+      <div class="reader-content">
+        <article class="chapter-body">
+          <section class="reader-section"
+                   ref="reader"
+                   :style="{transform: `translateX(-${pageNo * pageWidth}px)`}">
+            <div v-if="chapters[chapterNo] && chapters[chapterNo].article.length">
+              <h4 class="title pa-3"
+                  v-text="chapters[chapterNo].title"></h4>
+              <p class="main-text"
+                 v-for="(line, index) in chapters[chapterNo].article"
+                 :key="index"
+                 v-text="line">
+              </p>
+            </div>
+          </section>
+        </article>
+      </div>
     </div>
     <v-bottom-nav
       slot="footer"
@@ -54,9 +57,9 @@
       <v-btn flat @click="drawer = true">
         <v-icon class="mb-0">format_list_bulleted</v-icon>
       </v-btn>
-      <v-btn flat @click="bright = !bright">
-        <v-icon v-show="bright" class="mb-0">brightness_high</v-icon>
-        <v-icon v-show="!bright" class="mb-0">brightness_low</v-icon>
+      <v-btn flat @click="toggleMode">
+        <v-icon v-show="mode === 'day'" class="mb-0">brightness_high</v-icon>
+        <v-icon v-show="mode === 'night'" class="mb-0">brightness_low</v-icon>
       </v-btn>
       <v-btn flat @click="set = true">
         <v-icon class="mb-0">settings</v-icon>
@@ -110,6 +113,12 @@ export default {
     },
     showToolbar () {
       return this.$store.state.showToolbar
+    },
+    readerStyle () {
+      return this.$store.getters['reader/style']
+    },
+    mode () {
+      return this.$store.state.reader.mode
     }
   },
   beforeRouteEnter (from, to, next) {
@@ -202,37 +211,43 @@ export default {
       this.hideToolbar()
     },
     async nextPage () {
-      this.hideToolbar()
-      if ((this.pageNo + 1) * this.pageWidth >= this.chapterWidth) {
-        await this.getCatalog()
-        this.chapters[this.chapterNo].totalpage = this.pageNo
-        this.chapterNo += 1
-        this.chapterId = this.chapters[this.chapterNo].link
-        this.pageNo = 0
-        await this.getChapter()
-        this.$nextTick().then(() => {
-          this.chapterWidth = this.$refs.reader.scrollWidth
-        })
+      if (this.showToolbar) {
+        this.$store.commit('toggleToolbar', false)
       } else {
-        this.pageNo += 1
-      }
-    },
-    async prePage () {
-      this.hideToolbar()
-      if (this.pageNo <= 0) {
-        this.pageNo = 0
-        if (this.chapterNo > 0) {
-          this.chapterNo -= 1
+        if ((this.pageNo + 1) * this.pageWidth >= this.chapterWidth) {
+          await this.getCatalog()
+          this.chapters[this.chapterNo].totalpage = this.pageNo
+          this.chapterNo += 1
+          this.chapterId = this.chapters[this.chapterNo].link
+          this.pageNo = 0
           await this.getChapter()
           this.$nextTick().then(() => {
             this.chapterWidth = this.$refs.reader.scrollWidth
           })
-          this.pageNo = this.chapters[this.chapterNo].totalpage
+        } else {
+          this.pageNo += 1
         }
-      } else if (this.pageNo > 0) {
-        this.pageNo -= 1
+      }
+    },
+    async prePage () {
+      if (this.showToolbar) {
+        this.$store.commit('toggleToolbar', false)
       } else {
-        this.pageNo = 0
+        if (this.pageNo <= 0) {
+          this.pageNo = 0
+          if (this.chapterNo > 0) {
+            this.chapterNo -= 1
+            await this.getChapter()
+            this.$nextTick().then(() => {
+              this.chapterWidth = this.$refs.reader.scrollWidth
+            })
+            this.pageNo = this.chapters[this.chapterNo].totalpage
+          }
+        } else if (this.pageNo > 0) {
+          this.pageNo -= 1
+        } else {
+          this.pageNo = 0
+        }
       }
     },
     toggleToolbar () {
@@ -242,6 +257,9 @@ export default {
       if (this.showToolbar) {
         this.$store.commit('toggleToolbar', false)
       }
+    },
+    toggleMode () {
+      this.$store.commit('reader/toggleMode')
     }
   }
 }
@@ -249,6 +267,14 @@ export default {
 <style scoped>
   .page {
     transform-style: preserve-3d;
+  }
+
+  .page-reader {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
   }
 
   .page-header {
